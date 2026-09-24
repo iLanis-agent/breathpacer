@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BreathPacer - Guided breathing that keeps the count for you</title>
+<style>
+  :root { --bg:#0a1214; --card:#102025; --edge:#1e3a41; --ink:#e6f2f4; --dim:#8fb2ba; --accent:#4fd0c5; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--ink); min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:48px 20px; }
+  .wrap { max-width:680px; width:100%; }
+  h1 { font-size:2.4rem; letter-spacing:-0.5px; }
+  h1 .p { color:var(--accent); }
+  p.lede { color:var(--dim); margin:16px 0 28px; font-size:1.1rem; line-height:1.55; }
+  .feats { display:grid; gap:12px; margin-bottom:32px; }
+  .feat { background:var(--card); border:1px solid var(--edge); border-radius:12px; padding:16px 18px; }
+  .feat b { color:var(--accent); }
+  .feat p { color:var(--dim); font-size:0.95rem; margin-top:4px; }
+  a.cta { display:inline-block; background:var(--accent); color:#04302c; font-weight:700; padding:14px 34px; border-radius:10px; text-decoration:none; font-size:1.05rem; }
+  a.cta:hover { filter:brightness(1.1); }
+  .foot { color:var(--dim); font-size:0.85rem; margin-top:36px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Breath<span class="p">Pacer</span></h1>
+  <p class="lede">Slow breathing works, but counting seconds in your head while trying to relax is its own kind of stress. BreathPacer keeps the count - you just follow the circle.</p>
+  <div class="feats">
+    <div class="feat"><b>Four proven patterns</b><p>Box 4-4-4-4 for focus, 4-7-8 for winding down, coherent 5-5 for HRV, and the double-inhale sigh for fast calm.</p></div>
+    <div class="feat"><b>A circle that breathes with you</b><p>The pacer expands on the inhale, holds, and releases on the exhale - with the phase and seconds always visible.</p></div>
+    <div class="feat"><b>Sessions that add up</b><p>Pick your minutes, get the right cycle count, and build a log of total breathing time and a day streak.</p></div>
+    <div class="feat"><b>Private by design</b><p>No account, no cloud. Everything stays in your browser's local storage.</p></div>
+  </div>
+  <a class="cta" href="app.html">Open BreathPacer</a>
+  <p class="foot">Runs fully offline after load. Part of the App Factory experiment - a new app every hour.</p>
+</div>
+</body>
+</html>
