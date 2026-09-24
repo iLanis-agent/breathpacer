@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BreathPacer - App</title>
+<style>
+  :root { --bg:#0a1214; --card:#102025; --edge:#1e3a41; --ink:#e6f2f4; --dim:#8fb2ba; --accent:#4fd0c5; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--ink); min-height:100vh; padding:28px 18px 60px; }
+  .wrap { max-width:760px; margin:0 auto; }
+  header { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:22px; }
+  h1 { font-size:1.5rem; } h1 .p { color:var(--accent); }
+  a.home { color:var(--dim); text-decoration:none; font-size:0.9rem; }
+  section { background:var(--card); border:1px solid var(--edge); border-radius:14px; padding:20px; margin-bottom:20px; }
+  h2 { font-size:1.05rem; margin-bottom:14px; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; }
+  .field { display:flex; flex-direction:column; gap:5px; flex:1; min-width:130px; }
+  label { font-size:0.72rem; text-transform:uppercase; letter-spacing:0.6px; color:var(--dim); }
+  select, input, button { font:inherit; border-radius:8px; border:1px solid var(--edge); padding:10px 12px; background:#0a1214; color:var(--ink); }
+  select:focus, input:focus { outline:none; border-color:var(--accent); }
+  button { cursor:pointer; background:var(--accent); border:none; color:#04302c; font-weight:700; }
+  button:hover { filter:brightness(1.1); }
+  button.ghost { background:transparent; border:1px solid var(--edge); color:var(--dim); font-weight:400; }
+  button.ghost:hover { color:var(--ink); border-color:var(--accent); }
+  .pacer-zone { display:flex; flex-direction:column; align-items:center; padding:16px 0 8px; }
+  .circle { width:180px; height:180px; border-radius:50%; background:radial-gradient(circle at 35% 35%, rgba(79,208,197,.55), rgba(79,208,197,.12)); border:2px solid var(--accent); display:flex; align-items:center; justify-content:center; transition:transform 1s ease-in-out; }
+  .circle.in { transform:scale(1.25); }
+  .circle.hold, .circle.hold2 { transform:scale(1.25); }
+  .circle.out { transform:scale(0.85); }
+  .circle.done { transform:scale(1); opacity:0.7; }
+  .circle .num { font-size:2.6rem; font-weight:800; color:var(--ink); }
+  .phase-label { font-size:1.3rem; font-weight:700; margin-top:18px; color:var(--accent); }
+  .phase-sub { color:var(--dim); margin-top:6px; font-size:0.92rem; }
+  .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; }
+  .stat { background:#0a1214; border:1px solid var(--edge); border-radius:10px; padding:14px; }
+  .stat .v { font-size:1.35rem; font-weight:700; color:var(--accent); }
+  .stat .l { color:var(--dim); font-size:0.78rem; margin-top:3px; }
+  .note { color:var(--dim); font-size:0.85rem; margin-top:10px; line-height:1.5; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Breath<span class="p">Pacer</span></h1>
+    <a class="home" href="index.html">&larr; Home</a>
+  </header>
+
+  <section id="setup-section">
+    <h2>Set up a session</h2>
+    <div class="row">
+      <div class="field"><label>Pattern</label><select id="f-pattern"></select></div>
+      <div class="field"><label>Minutes</label><input id="f-min" type="number" min="1" max="30" step="1" value="3"></div>
+      <div class="field" style="flex:0 0 auto; justify-content:flex-end"><button id="f-start">Start</button></div>
+    </div>
+    <div class="note" id="hint"></div>
+  </section>
+
+  <section id="pacer-section" style="display:none">
+    <div class="pacer-zone">
+      <div class="circle" id="circle"><span class="num" id="num">4</span></div>
+      <div class="phase-label" id="phase">Breathe in</div>
+      <div class="phase-sub" id="sub"></div>
+      <div class="row" style="margin-top:16px; justify-content:center"><button class="ghost" id="f-stop">End session early</button></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Your record</h2>
+    <div class="stats">
+      <div class="stat"><div class="v" id="s-sessions">0</div><div class="l">completed sessions</div></div>
+      <div class="stat"><div class="v" id="s-min">0</div><div class="l">total breathing minutes</div></div>
+      <div class="stat"><div class="v" id="s-streak">0</div><div class="l">day streak</div></div>
+    </div>
+  </section>
+</div>
+
+<script src="engine.js"></script>
+<script>
+(function () {
+  var KEY = 'breathpacer-log';
+  var $ = function (id) { return document.getElementById(id); };
+
+  function load() { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) { return []; } }
+  function save(list) { localStorage.setItem(KEY, JSON.stringify(list)); }
+
+  var sel = $('f-pattern');
+  BreathEngine.PATTERNS.forEach(function (p) {
+    var o = document.createElement('option');
+    o.value = p.id;
+    o.textContent = p.label;
+    sel.appendChild(o);
+  });
+
+  function updateHint() {
+    var p = BreathEngine.patternById(sel.value);
+    var mins = Number($('f-min').value) || 3;
+    var cycles = BreathEngine.cyclesFor(p, mins);
+    $('hint').textContent = p.hint + ' - ' + mins + ' min works out to ' + cycles + ' cycles of ' + BreathEngine.cycleSeconds(p) + 's.';
+  }
+  sel.addEventListener('change', updateHint);
+  $('f-min').addEventListener('change', updateHint);
+
+  var running = null;
+  var tick = null;
+
+  function render() {
+    var log = load();
+    var st = BreathEngine.stats(log);
+    $('s-sessions').textContent = st.sessions;
+    $('s-min').textContent = st.totalMinutes;
+    $('s-streak').textContent = BreathEngine.streak(log, new Date());
+  }
+
+  function frame() {
+    var elapsed = (Date.now() - running.started) / 1000;
+    var st = BreathEngine.phaseAt(running.pattern, elapsed, running.cycles);
+    var circle = $('circle');
+    circle.className = 'circle ' + (st.phase === 'done' ? 'done' : st.phase);
+    $('phase').textContent = st.phaseLabel;
+    $('num').textContent = st.done ? '' : st.phaseLeft;
+    $('sub').textContent = st.done
+      ? 'Session complete - well paced.'
+      : 'Cycle ' + st.cycle + ' of ' + st.totalCycles + ' - ' + st.pct + '% through the session.';
+    if (st.done) finish(true);
+  }
+
+  function finish(completed) {
+    if (tick) clearInterval(tick);
+    tick = null;
+    var seconds = Math.round((Date.now() - running.started) / 1000);
+    if (completed || seconds >= 30) {
+      var log = load();
+      log.push({ id: 'b' + Date.now(), patternId: running.pattern.id, seconds: completed ? running.cycles * BreathEngine.cycleSeconds(running.pattern) : seconds, at: new Date().toISOString() });
+      save(log);
+    }
+    running = null;
+    $('pacer-section').style.display = 'none';
+    $('setup-section').style.display = 'block';
+    render();
+  }
+
+  $('f-start').addEventListener('click', function () {
+    var p = BreathEngine.patternById(sel.value);
+    var mins = Math.max(1, Math.min(30, Number($('f-min').value) || 3));
+    var cycles = BreathEngine.cyclesFor(p, mins);
+    running = { pattern: p, cycles: cycles, started: Date.now() };
+    $('setup-section').style.display = 'none';
+    $('pacer-section').style.display = 'block';
+    tick = setInterval(frame, 250);
+    frame();
+  });
+
+  $('f-stop').addEventListener('click', function () { finish(false); });
+
+  updateHint();
+  render();
+})();
+</script>
+</body>
+</html>
